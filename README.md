@@ -1,261 +1,152 @@
--- ==============================================================================
--- [GASPARZINHOO v1.06] - INFINITY ESSENCE DROP MANIPULATOR
--- Chaos Piece - E Gate Dungeon - 100% Drop Rate
--- ==============================================================================
+-- ============================================================================== -- [PREMIUM CHEST FARM] - VERSÃO DEFINITIVA (UI ANIMADA + HOTKEY) -- Compatível com VOLT. Rotação controlada, Cooldown (8s) e UI Premium. -- ==============================================================================
 
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players") local TweenService = game:GetService("TweenService") local UserInputService = game:GetService("UserInputService") local RunService = game:GetService("RunService")
 
-local LocalPlayer = Players.LocalPlayer
-local DropActive = false
+local LocalPlayer = Players.LocalPlayer local ChestFarmActive = false local BlacklistedChests = {}
 
--- ==============================================================================
--- 1. UI
--- ==============================================================================
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "GasparzinhooGui"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = game:GetService("CoreGui")
+-- Configuração da Tecla de Atalho (Esconder/Mostrar UI) local TOGGLE_KEY = Enum.KeyCode.RightControl
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-MainFrame.Size = UDim2.new(0, 300, 0, 270)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.Parent = ScreenGui
+-- Coordenadas exatas fornecidas para cada uma das 8 ilhas local IslandPositions = { CFrame.new(-189.54974365234375, 13.674964904785156, -609.3209228515625), -- 1. Starter CFrame.new(-856.2052612304688, 11.592161178588867, 662.95654296875), -- 2. Forest CFrame.new(1372.12255859375, 3.61570405960083, 1822.9290771484375), -- 3. Rocky CFrame.new(3403.5087890625, 16.919490814208984, 402.89752197265625), -- 4. Desert CFrame.new(-397.72119140625, 36.68341064453125, -3268.46484375), -- 5. Ice CFrame.new(-273.8543395996094, 1582.9114990234375, 2272.558349609375), -- 6. Sky kingdom CFrame.new(2544.197021484375, 57.05317687988281, -4897.49267578125), -- 7. Marineford CFrame.new(2897.0458984375, 83.3616943359375, -2853.43603515625) -- 8. Business district }
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 12)
-MainCorner.Parent = MainFrame
+-- ============================================================================== -- 1. CRIAÇÃO DA INTERFACE GRÁFICA (UI) -- ============================================================================== local ScreenGui = Instance.new("ScreenGui") ScreenGui.Name = "PremiumChestFarmGui" ScreenGui.ResetOnSpawn = false
 
-local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(138, 43, 226)
-MainStroke.Thickness = 1.5
-MainStroke.Parent = MainFrame
+local success = pcall(function() ScreenGui.Parent = game.CoreGui end) if not success then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
-local TitleLabel = Instance.new("TextLabel")
-TitleLabel.Size = UDim2.new(1, 0, 0, 40)
-TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "∞ Gasparzinhoo v1.06 ∞"
-TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.TextSize = 18
-TitleLabel.Parent = MainFrame
+local MainFrame = Instance.new("Frame") MainFrame.Name = "MainFrame" -- AnchorPoint centralizado para a animação de zoom sair do meio MainFrame.AnchorPoint = Vector2.new(0.5, 0.5) MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0) MainFrame.Size = UDim2.new(0, 0, 0, 0) -- Começa invisível/tamanho zero para animar MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30) MainFrame.BorderSizePixel = 0 MainFrame.ClipsDescendants = true -- Fundamental para o sistema de minimizar MainFrame.Parent = ScreenGui
 
-local SubtitleLabel = Instance.new("TextLabel")
-SubtitleLabel.Size = UDim2.new(1, 0, 0, 20)
-SubtitleLabel.Position = UDim2.new(0, 0, 0, 40)
-SubtitleLabel.BackgroundTransparency = 1
-SubtitleLabel.Text = "Infinity Essence - E Gate"
-SubtitleLabel.TextColor3 = Color3.fromRGB(138, 43, 226)
-SubtitleLabel.Font = Enum.Font.Gotham
-SubtitleLabel.TextSize = 12
-SubtitleLabel.Parent = MainFrame
+local MainCorner = Instance.new("UICorner") MainCorner.CornerRadius = UDim.new(0, 12) MainCorner.Parent = MainFrame
 
-local StatusFrame = Instance.new("Frame")
-StatusFrame.Size = UDim2.new(1, -30, 0, 35)
-StatusFrame.Position = UDim2.new(0, 15, 0, 70)
-StatusFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-StatusFrame.BorderSizePixel = 0
-StatusFrame.Parent = MainFrame
+local MainStroke = Instance.new("UIStroke") MainStroke.Color = Color3.fromRGB(60, 60, 70) MainStroke.Thickness = 1.5 MainStroke.Parent = MainFrame
 
-local StatusDot = Instance.new("Frame")
-StatusDot.Size = UDim2.new(0, 10, 0, 10)
-StatusDot.Position = UDim2.new(0, 10, 0.5, -5)
-StatusDot.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-StatusDot.BorderSizePixel = 0
-StatusDot.Parent = StatusFrame
+local TitleLabel = Instance.new("TextLabel") TitleLabel.Name = "TitleLabel" TitleLabel.Size = UDim2.new(1, 0, 0, 40) TitleLabel.BackgroundTransparency = 1 TitleLabel.Text = "✧ Island Master Farm ✧" TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255) TitleLabel.Font = Enum.Font.GothamBold TitleLabel.TextSize = 18 TitleLabel.Parent = MainFrame
 
-local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Size = UDim2.new(1, -30, 1, 0)
-StatusLabel.Position = UDim2.new(0, 25, 0, 0)
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "Desativado"
-StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-StatusLabel.TextSize = 13
-StatusLabel.Font = Enum.Font.GothamSemibold
-StatusLabel.Parent = StatusFrame
+-- Botão de Minimizar local MinimizeBtn = Instance.new("TextButton") MinimizeBtn.Name = "MinimizeBtn" MinimizeBtn.Size = UDim2.new(0, 30, 0, 30) MinimizeBtn.Position = UDim2.new(1, -35, 0, 5) MinimizeBtn.BackgroundTransparency = 1 MinimizeBtn.Text = "-" MinimizeBtn.TextColor3 = Color3.fromRGB(200, 200, 200) MinimizeBtn.Font = Enum.Font.GothamBold MinimizeBtn.TextSize = 22 MinimizeBtn.Parent = MainFrame
 
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Size = UDim2.new(1, -30, 0, 42)
-ToggleButton.Position = UDim2.new(0, 15, 0, 115)
-ToggleButton.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
-ToggleButton.Text = "🔮 ATIVAR DROP 100%"
-ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleButton.Font = Enum.Font.GothamSemibold
-ToggleButton.TextSize = 14
-ToggleButton.AutoButtonColor = false
-ToggleButton.Parent = MainFrame
+local ToggleButton = Instance.new("TextButton") ToggleButton.Name = "ToggleButton" ToggleButton.Size = UDim2.new(0, 200, 0, 45) ToggleButton.Position = UDim2.new(0.5, -100, 0.6, -10) ToggleButton.BackgroundColor3 = Color3.fromRGB(230, 60, 60) ToggleButton.Text = "Chest Farm: OFF" ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255) ToggleButton.Font = Enum.Font.GothamSemibold ToggleButton.TextSize = 16 ToggleButton.AutoButtonColor = false ToggleButton.Parent = MainFrame
 
-local ButtonCorner = Instance.new("UICorner")
-ButtonCorner.CornerRadius = UDim.new(0, 8)
-ButtonCorner.Parent = ToggleButton
+local ButtonCorner = Instance.new("UICorner") ButtonCorner.CornerRadius = UDim.new(0, 8) ButtonCorner.Parent = ToggleButton
 
-local GiveButton = Instance.new("TextButton")
-GiveButton.Size = UDim2.new(1, -30, 0, 42)
-GiveButton.Position = UDim2.new(0, 15, 0, 165)
-GiveButton.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-GiveButton.Text = "🎁 DAR 1x INFINITY ESSENCE"
-GiveButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-GiveButton.Font = Enum.Font.GothamSemibold
-GiveButton.TextSize = 14
-GiveButton.AutoButtonColor = false
-GiveButton.Parent = MainFrame
+-- Dica de Atalho (Aparece embaixo do botão) local HintLabel = Instance.new("TextLabel") HintLabel.Name = "HintLabel" HintLabel.Size = UDim2.new(1, 0, 0, 20) HintLabel.Position = UDim2.new(0, 0, 1, -25) HintLabel.BackgroundTransparency = 1 HintLabel.Text = "Aperte 'RightControl' para esconder a UI" HintLabel.TextColor3 = Color3.fromRGB(150, 150, 150) HintLabel.Font = Enum.Font.Gotham HintLabel.TextSize = 11 HintLabel.Parent = MainFrame
 
-local GiveButtonCorner = Instance.new("UICorner")
-GiveButtonCorner.CornerRadius = UDim.new(0, 8)
-GiveButtonCorner.Parent = GiveButton
+-- ============================================================================== -- 2. SISTEMA DE ARRASTE, ANIMAÇÕES E HOTKEY -- ============================================================================== local dragging = false local dragInput, dragStart, startPos
 
-local ScanButton = Instance.new("TextButton")
-ScanButton.Size = UDim2.new(1, -30, 0, 42)
-ScanButton.Position = UDim2.new(0, 15, 0, 215)
-ScanButton.BackgroundColor3 = Color3.fromRGB(52, 152, 219)
-ScanButton.Text = "🔍 ESCANEAR SISTEMA"
-ScanButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ScanButton.Font = Enum.Font.GothamSemibold
-ScanButton.TextSize = 14
-ScanButton.AutoButtonColor = false
-ScanButton.Parent = MainFrame
+-- Arrastar pela barra de título TitleLabel.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = true dragStart = input.Position startPos = MainFrame.Position
 
-local ScanButtonCorner = Instance.new("UICorner")
-ScanButtonCorner.CornerRadius = UDim.new(0, 8)
-ScanButtonCorner.Parent = ScanButton
+    input.Changed:Connect(function()
+        if input.UserInputState == Enum.UserInputState.End then
+            dragging = false
+        end
+    end)
+end
+end)
 
--- ==============================================================================
--- 2. LÓGICA
--- ==============================================================================
+UserInputService.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
 
-local function ScanSystem()
-    print("=":rep(50))
-    print("🔍 SCAN - CHAOS PIECE")
-    print("=":rep(50))
-    
-    for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
-        if obj:IsA("RemoteEvent") then
-            local name = obj.Name:lower()
-            if name:find("drop") or name:find("loot") or name:find("boss") or name:find("dungeon") then
-                print("📦", obj:GetFullName())
+if input == dragInput and dragging then
+    local delta = input.Position - dragStart
+    local targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    TweenService:Create(MainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = targetPos}):Play()
+end
+end)
+
+-- Sistema de Minimizar local isMinimized = false MinimizeBtn.Activated:Connect(function() isMinimized = not isMinimized local targetSize = isMinimized and UDim2.new(0, 300, 0, 40) or UDim2.new(0, 300, 0, 150)
+
+TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = targetSize}):Play()
+end)
+
+-- Sistema de Hotkey (Esconder tudo) UserInputService.InputBegan:Connect(function(input, gameProcessed) if not gameProcessed and input.KeyCode == TOGGLE_KEY then ScreenGui.Enabled = not ScreenGui.Enabled end end)
+
+-- ANIMAÇÃO DE ENTRADA AO ABRIR O SCRIPT TweenService:Create(MainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = UDim2.new(0, 300, 0, 150) }):Play()
+
+-- ============================================================================== -- 3. LÓGICA DO FARM COM ROTAÇÃO FIXA E CONTROLE DE COOLDOWN -- ==============================================================================
+
+local function GetClosestChest() local Character = LocalPlayer.Character if not Character or not Character:FindFirstChild("HumanoidRootPart") then return nil end local RootPart = Character.HumanoidRootPart
+
+local closestChest = nil
+local shortestDistance = math.huge
+
+for _, obj in pairs(workspace:GetDescendants()) do
+    if obj:IsA("BasePart") and string.find(string.lower(obj.Name), "chest") then
+        if not BlacklistedChests[obj] then
+            local distance = (obj.Position - RootPart.Position).Magnitude
+            if distance < shortestDistance and distance < 1500 then
+                shortestDistance = distance
+                closestChest = obj
             end
         end
     end
-    
-    for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
-        if obj:IsA("RemoteFunction") then
-            local name = obj.Name:lower()
-            if name:find("inventory") or name:find("item") then
-                print("📦", obj:GetFullName())
-            end
-        end
-    end
-    
-    print("✅ Scan Completo!")
-    print("=":rep(50))
+end
+return closestChest
 end
 
-local function GiveItem()
-    local itemName = "Infinity Essence"
-    local success = false
-    
-    for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
-        if obj:IsA("RemoteEvent") then
-            local name = obj.Name:lower()
-            if name:find("drop") or name:find("loot") or name:find("boss") or name:find("dungeon") then
-                pcall(function()
-                    obj:FireServer(itemName, 1)
-                    success = true
-                end)
-                if success then break end
-            end
-        end
-    end
-    
-    if not success then
-        for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
-            if obj:IsA("RemoteFunction") then
-                local name = obj.Name:lower()
-                if name:find("inventory") or name:find("item") then
+local function FarmLoop() while ChestFarmActive do for index, islandCFrame in ipairs(IslandPositions) do if not ChestFarmActive then break end
+
+        local Character = LocalPlayer.Character
+        local RootPart = Character and Character:FindFirstChild("HumanoidRootPart")
+        
+        if RootPart then
+            local islandStartTime = tick()
+            
+            -- Teleporte e aguarda carregar mapa
+            RootPart.CFrame = islandCFrame
+            task.wait(1.5)
+            
+            -- Coleta os baús
+            local searchingChests = true
+            while searchingChests and ChestFarmActive do
+                local targetChest = GetClosestChest()
+                
+                if targetChest then
+                    targetChest.CFrame = RootPart.CFrame
+                    
                     pcall(function()
-                        local result = obj:InvokeServer("AddItem", itemName, 1)
-                        if result then success = true end
+                        if firetouchinterest then
+                            firetouchinterest(RootPart, targetChest, 0)
+                            firetouchinterest(RootPart, targetChest, 1)
+                        end
                     end)
-                    if success then break end
+                    pcall(function()
+                        local prompt = targetChest:FindFirstChildWhichIsA("ProximityPrompt", true)
+                        if prompt and fireproximityprompt then
+                            fireproximityprompt(prompt)
+                        end
+                    end)
+                    
+                    BlacklistedChests[targetChest] = true
+                    task.wait(0.1)
+                else
+                    searchingChests = false
                 end
             end
+            
+            -- Controle de Cooldown (Mínimo de 8s)
+            local timeSpentOnIsland = tick() - islandStartTime
+            if timeSpentOnIsland < 8 then
+                task.wait(8 - timeSpentOnIsland)
+            end
         end
     end
-    
-    return success
+    BlacklistedChests = {}
+    task.wait(2)
+end
 end
 
--- ==============================================================================
--- 3. BOTÕES
--- ==============================================================================
+-- ============================================================================== -- 4. CONTROLE DO BOTÃO -- ============================================================================== local function AnimateButton(isHovering) if ChestFarmActive then return end local color = isHovering and Color3.fromRGB(240, 80, 80) or Color3.fromRGB(230, 60, 60) TweenService:Create(ToggleButton, TweenInfo.new(0.2), {BackgroundColor3 = color}):Play() end
 
-ToggleButton.Activated:Connect(function()
-    DropActive = not DropActive
+ToggleButton.MouseEnter:Connect(function() AnimateButton(true) end) ToggleButton.MouseLeave:Connect(function() AnimateButton(false) end)
 
-    if DropActive then
-        ToggleButton.Text = "🔮 DESATIVAR DROP 100%"
-        TweenService:Create(ToggleButton, TweenInfo.new(0.3), {
-            BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-        }):Play()
-        StatusDot.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-        StatusLabel.Text = "Ativado - 100% Drop"
-        StatusLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
-    else
-        ToggleButton.Text = "🔮 ATIVAR DROP 100%"
-        TweenService:Create(ToggleButton, TweenInfo.new(0.3), {
-            BackgroundColor3 = Color3.fromRGB(138, 43, 226)
-        }):Play()
-        StatusDot.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-        StatusLabel.Text = "Desativado"
-        StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-    end
+ToggleButton.Activated:Connect(function() ChestFarmActive = not ChestFarmActive
+
+local targetColor = ChestFarmActive and Color3.fromRGB(60, 200, 100) or Color3.fromRGB(230, 60, 60)
+local targetText = ChestFarmActive and "Chest Farm: ON" or "Chest Farm: OFF"
+
+TweenService:Create(ToggleButton, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+    BackgroundColor3 = targetColor
+}):Play()
+ToggleButton.Text = targetText
+
+if ChestFarmActive then
+    BlacklistedChests = {}
+    coroutine.wrap(FarmLoop)()
+end
 end)
-
-GiveButton.Activated:Connect(function()
-    GiveButton.Text = "⏳ PROCESSANDO..."
-    GiveButton.BackgroundColor3 = Color3.fromRGB(241, 196, 15)
-    
-    local success = GiveItem()
-    
-    task.wait(0.5)
-    
-    if success then
-        GiveButton.Text = "✅ ITEM RECEBIDO!"
-        GiveButton.BackgroundColor3 = Color3.fromRGB(39, 174, 96)
-    else
-        GiveButton.Text = "⚠️ USE O SCAN PRIMEIRO"
-        GiveButton.BackgroundColor3 = Color3.fromRGB(243, 156, 18)
-    end
-    
-    task.wait(2)
-    GiveButton.Text = "🎁 DAR 1x INFINITY ESSENCE"
-    GiveButton.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-end)
-
-ScanButton.Activated:Connect(function()
-    ScanButton.Text = "⏳ ESCANEANDO..."
-    ScanButton.BackgroundColor3 = Color3.fromRGB(241, 196, 15)
-    
-    ScanSystem()
-    
-    task.wait(1)
-    ScanButton.Text = "✅ SCAN COMPLETO!"
-    ScanButton.BackgroundColor3 = Color3.fromRGB(39, 174, 96)
-    
-    task.wait(2)
-    ScanButton.Text = "🔍 ESCANEAR SISTEMA"
-    ScanButton.BackgroundColor3 = Color3.fromRGB(52, 152, 219)
-end)
-
-print("╔══════════════════════════════════╗")
-print("║  Gasparzinhoo v1.06 - Carregado ║")
-print("║  Chaos Piece - Infinity Essence ║")
-print("╚══════════════════════════════════╝")
